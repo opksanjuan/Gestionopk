@@ -394,12 +394,20 @@ alumnos(){const e=edit?al(edit)||{}:{};
  +card(`<div class="r" style="margin:0 0 8px"><input id="qb" autocomplete="off" placeholder="Buscar por nombre, DNI, domicilio, teléfono…" value="${esc(q)}" oninput="q=this.value;lista()" style="flex:1;min-width:200px"><button onclick="exp('alumnos','xlsx')">📊 Excel</button><button onclick="exp('alumnos','pdf')">📄 PDF</button></div><div class="mu" style="margin-bottom:8px">${puede()?'Listado y administración de alumnos':'Listado de alumnos'}</div><div id="lista">${tablaAl()}</div>`)
  +importar},
 cobros(){const ps=L('pend').sort(ordPagos).slice(0,60),pen=ps.filter(p=>p.estado=='pendiente');
- const alta=puede()?card(`<b>Registrar cobro (queda pendiente de acreditar)</b><div class="g" style="margin-top:8px"><div><label>Alumno</label><select id="pa">${actAl().map(a=>`<option value="${a.cod}">${esc(a.nombre)} (#${a.cod})</option>`).join('')}</select></div>
- <div><label>Mes que paga</label><input id="pm" type="month" value="${mes}"></div><div><label>Monto</label><input id="pt" type="number" inputmode="numeric"></div>
- <div><label>Método</label><select id="pk">${opts(['Efectivo','Transferencia','Otro'])}</select></div><div><label>Fecha de cobro</label><input id="pf" type="date" value="${hoy}"></div></div><div class="r"><button class="p" onclick="addPend()">Registrar cobro</button></div>`):'';
- return alta+card(`<b>${puede()?`Cobros (${pen.length} por acreditar)`:`Pagos · ${pen.length} pendientes de acreditar`}</b><div class="r" style="margin:6px 0"><button onclick="exp('pagos','xlsx')">📊 Excel</button><button onclick="exp('pagos','pdf')">📄 PDF</button></div><div class="w"><table><tr><th>Fecha</th><th>Alumno</th><th>Mes</th><th>Método</th><th>Monto</th><th>Cargó</th><th>Estado</th><th></th></tr>
+ const ep=edit?C.pend[edit]:null;
+ const editor=(puede()&&ep)?card(`<b>✏️ Editar cobro</b><div class="g" style="margin-top:8px">
+ <div><label>Alumno</label><select id="eda">${sorted().map(a=>`<option value="${a.cod}" ${a.cod==ep.cod?'selected':''}>${esc(a.nombre)} (#${a.cod})</option>`).join('')}</select></div>
+ <div><label>Mes que paga</label><input id="edm" type="month" value="${esc(ep.mes)}"></div>
+ <div><label>Monto</label><input id="edt" type="number" inputmode="numeric" value="${esc(ep.monto)}"></div>
+ <div style="grid-column:1/-1;margin:8px 0 6px"><label>Método</label>${metHtml('mE',ep.met)}</div>
+ <div><label>Fecha de cobro</label><input id="edf" type="date" value="${esc(ep.fecha)}"></div></div>
+ <div class="r"><button class="p" onclick="savePago()">Guardar cambios</button><button onclick="edit=null;render()">Cancelar</button></div>`):'';
+ const alta=puede()?card(`<b>Registrar cobro (queda pendiente de acreditar)</b><div class="g" style="margin-top:8px"><div><label>Alumno · faltan <span id="pfalt">${faltanPa(mes).length}</span></label><select id="pa">${optsPa(mes)}</select></div>
+ <div><label>Mes que paga</label><input id="pm" type="month" value="${mes}" onchange="refPa()"></div><div><label>Monto</label><input id="pt" type="number" inputmode="numeric"></div>
+ <div style="grid-column:1/-1;margin:8px 0 6px"><label>Método</label>${metHtml('mA',lastMet)}</div><div><label>Fecha de cobro</label><input id="pf" type="date" value="${hoy}"></div></div><div class="r"><button class="p" onclick="addPend()">Registrar cobro</button></div>`):'';
+ return editor+alta+card(`<b>${puede()?`Cobros (${pen.length} por acreditar)`:`Pagos · ${pen.length} pendientes de acreditar`}</b><div class="r" style="margin:6px 0"><button onclick="exp('pagos','xlsx')">📊 Excel</button><button onclick="exp('pagos','pdf')">📄 PDF</button></div><div class="w"><table><tr><th>Fecha</th><th>Alumno</th><th>Mes</th><th>Método</th><th>Monto</th><th>Cargó</th><th>Estado</th><th></th></tr>
  ${ps.map(p=>`<tr><td>${fd(p.fecha)}</td><td>${esc(nom(p.cod))}</td><td>${p.mes}</td><td>${esc(p.met)}</td><td>${$$(p.monto)}</td><td>${esc(p.por)}</td><td class="${p.estado=='acreditado'?'ok':p.estado=='rechazado'?'bad':'mu'}">${p.estado}</td>
- <td>${p.estado!='rechazado'?`<button onclick="recibo('${p.id}')">🧾 Recibo</button> `:''}${(dueno()||me?.rol=='coordinador')&&p.estado=='pendiente'?`<button class="p" onclick="acre('${p.id}')">Acreditar</button> `:''}${puede()&&p.estado=='pendiente'?`<button onclick="rech('${p.id}')">Rechazar</button> `+(dueno()?`<button onclick="delPend('${p.id}')">🗑</button>`:''):''}</td></tr>`).join('')}</table></div>`)},
+ <td>${puede()&&p.estado!='rechazado'?`<button onclick="edit='${p.id}';render();scrollTo(0,0)">✏️</button> `:''}${p.estado!='rechazado'?`<button onclick="recibo('${p.id}')">🧾 Recibo</button> `:''}${(dueno()||me?.rol=='coordinador')&&p.estado=='pendiente'?`<button class="p" onclick="acre('${p.id}')">Acreditar</button> `:''}${puede()&&p.estado=='pendiente'?`<button onclick="rech('${p.id}')">Rechazar</button> `+(dueno()?`<button onclick="delPend('${p.id}')">🗑</button>`:''):''}</td></tr>`).join('')}</table></div>`)},
 caja(){const ing=L('pagos').filter(p=>p.fecha.startsWith(mes)),egr=L('egresos').filter(e=>e.fecha.startsWith(mes)),ti=ing.reduce((s,p)=>s+p.monto,0),te=egr.reduce((s,e)=>s+e.monto,0);
  const mov=[...ing.map(p=>({f:p.fecha,c:'Cuota: '+nom(p.cod)+' ('+p.met+')',m:p.monto})),...egr.map(e=>({f:e.fecha,c:e.concepto,m:-e.monto,id:e.id}))].sort((a,b)=>b.f.localeCompare(a.f));
  return mesI()+card(`<div class="k"><div>Ingresos<b class="ok">${$$(ti)}</b></div><div>Egresos<b class="bad">${$$(te)}</b></div><div>Saldo<b>${$$(ti-te)}</b></div></div>`)
@@ -542,6 +550,26 @@ function printGrupos(){
 }
 window.plantillaGrupos=plantillaGrupos;window.addGrupoBloque=addGrupoBloque;window.dupGrupoBloque=dupGrupoBloque;window.delGrupoBloque=delGrupoBloque;window.addGrupoFila=addGrupoFila;window.delGrupoFila=delGrupoFila;window.addGrupoCol=addGrupoCol;window.delGrupoCol=delGrupoCol;window.grupoMeta=grupoMeta;window.grupoFilas=grupoFilas;window.grupoCelda=grupoCelda;window.grupoColMeta=grupoColMeta;window.grupoProfe=grupoProfe;window.printGrupos=printGrupos;
 
+/* ===== Pagos: alumnos faltantes, método con tilde y edición ===== */
+let lastMet='Efectivo';
+const pagoCods=m=>new Set(L('pend').filter(p=>p.mes==m&&p.estado!='rechazado').map(p=>+p.cod));
+const faltanPa=m=>{const ya=pagoCods(m);return actAl().filter(a=>!ya.has(a.cod))};
+const optsPa=m=>{const l=faltanPa(m);return l.length?l.map(a=>`<option value="${a.cod}">${esc(a.nombre)} (#${a.cod})</option>`).join(''):'<option value="">✔ Todos pagaron este mes</option>'};
+function refPa(){const s=$('#pa'),m=$('#pm')?.value;if(!s)return;s.innerHTML=optsPa(m);const n=$('#pfalt');if(n)n.textContent=faltanPa(m).length}
+const metHtml=(g,val)=>`<div style="display:flex;gap:12px;flex-wrap:wrap;padding:6px 0 2px">`+['Efectivo','Transferencia',...(val&&!['Efectivo','Transferencia'].includes(val)?[val]:[])].map(v=>`<label style="display:flex;gap:10px;align-items:center;padding:10px 16px;border:1px solid var(--bd);border-radius:12px;background:#0a172c;cursor:pointer;font-size:15px;color:var(--tx);margin:0"><input type="checkbox" class="${g}" value="${esc(v)}" ${v==val?'checked':''} onchange="metSel(this,'${g}')" style="width:18px;height:18px;padding:0;margin:0;flex:none;accent-color:#2388ff"> ${esc(v)}</label>`).join('')+`</div>`;
+function metSel(el,g){document.querySelectorAll('.'+g).forEach(x=>{if(x!==el)x.checked=false});if(!el.checked)el.checked=true}
+const getMet=(g,def)=>{const c=document.querySelector('.'+g+':checked');return c?c.value:def};
+async function savePago(){
+ if(!puede())return alert('No tenés permiso para editar cobros.');
+ const id=edit,p=C.pend[id];if(!p)return;
+ const c=+$('#eda').value,m=+$('#edt').value,mm=$('#edm').value,f=$('#edf').value,met=getMet('mE',p.met);
+ if(!c||!m||!mm||!f)return alert('Completá alumno, mes, monto y fecha.');
+ const n={...p,cod:c,mes:mm,monto:m,met,fecha:f};
+ edit=null;
+ await put('pend',id,n);
+ if(p.estado=='acreditado')await put('pagos',id,{id,cod:c,mes:mm,monto:m,met,fecha:f,por:p.por});
+}
+window.refPa=refPa;window.metSel=metSel;window.savePago=savePago;
 const SEED=[['IGNACIO',5500],['AGUSTIN',5500],['MARTIN',7000],['SEBA',7000],['EZEQUIEL',7000],['BRIAN',4500],['MARCOS',8000]];
 const seedC=()=>{const ex=new Set(L('profes').map(p=>p.nombre.trim().toUpperCase()));return SEED.some(([n])=>!ex.has(n))?card(`<b>Profesores de tu tabla de octubre</b><div class="mu">Carga a ${SEED.map(([n,v])=>n+' ('+$$(v)+')').join(', ')} con su valor hora, y marca el feriado del 12/10. No duplica los que ya existan.</div><div class="r"><button class="p" onclick="seedProfes()">Cargar profesores</button></div>`):''};
 async function seedProfes(){if(!dueno())return alert('Solo el dueño puede cargar profesores.');const ex=new Set(L('profes').map(p=>p.nombre.trim().toUpperCase()));let i=0;
@@ -679,8 +707,8 @@ async function moverAl(c,campo,v){if(!puede())return alert('No tenés permiso.')
  if(ocup>=k&&!confirm('El grupo '+n.cat+' · '+n.dia+' ya tiene el cupo completo ('+ocup+'/'+k+'). ¿Mover igual?')){render();return}await put('alumnos',c,n)}
 async function setCupo(c,d,v){if(!puede())return alert('No tenés permiso.');const id=c+'__'+d;await put('cupos',id,{id,cupo:Math.max(0,parseInt(v)||0)})}
 function delAl(c){if(!dueno())return alert('Solo el dueño puede eliminar alumnos.');if(confirm('¿Eliminar a '+nom(c)+'?'))rm('alumnos',c)}
-function addPend(){if(!puede())return alert('No tenés permiso para registrar cobros.');const m=+$('#pt').value,c=+$('#pa').value;if(!c||!m)return alert('Elegí alumno y monto');const id=uid();mes=$('#pm').value;
- put('pend',id,{id,cod:c,mes:$('#pm').value,monto:m,met:$('#pk').value,fecha:$('#pf').value,por:me.nombre,estado:'pendiente'})}
+function addPend(){if(!puede())return alert('No tenés permiso para registrar cobros.');const m=+$('#pt').value,c=+$('#pa').value;if(!c||!m)return alert('Elegí alumno y monto');const id=uid();mes=$('#pm').value;lastMet=getMet('mA','Efectivo');
+ put('pend',id,{id,cod:c,mes:$('#pm').value,monto:m,met:lastMet,fecha:$('#pf').value,por:me.nombre,estado:'pendiente'})}
 async function acre(id){if(!dueno()&&me?.rol!='coordinador')return alert('No tenés permiso para acreditar pagos.');const p=C.pend[id];if(!p)return alert('Pago no encontrado.');await put('pagos',id,{id,cod:p.cod,mes:p.mes,monto:p.monto,met:p.met,fecha:p.fecha,por:p.por});await put('pend',id,{...p,estado:'acreditado'})}
 const rech=id=>{if(!puede())return alert('No tenés permiso para rechazar pagos.');return put('pend',id,{...C.pend[id],estado:'rechazado'})};
 async function delPend(id){if(!dueno())return alert('Solo el dueño puede eliminar cobros.');if(!confirm('¿Eliminar este cobro?'))return;if(dueno())await rm('pagos',id);rm('pend',id)}
