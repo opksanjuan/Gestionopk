@@ -213,6 +213,8 @@ const rm=async(k,id)=>{
 };
 
 const uid=()=>String(Date.now())+Math.floor(Math.random()*99);
+const PLANES=[['','— Seleccionar plan —'],['individual','Clase individual · $10.000'],['1x','1 vez por semana · $31.000'],['2x','2 veces por semana · $41.000'],['3x','3 veces por semana · $51.000'],['hermanos2x','Hermanos · 2 veces por semana · $35.000'],['hermanos3x','Hermanos · 3 veces por semana · $45.000']];
+const planOpts=v=>PLANES.map(([k,t])=>`<option value="${k}" ${k===(v||'')?'selected':''}>${t}</option>`).join('');
 const card=h=>`<div class="card">${h}</div>`,opts=(a,s)=>a.map(x=>`<option ${x==s?'selected':''}>${esc(x)}</option>`).join('');
 const al=c=>C.alumnos[c],nom=c=>al(c)?al(c).nombre:'(eliminado)',pn=id=>(C.profes[id]||{nombre:'(eliminado)'}).nombre;
 const apell=c=>{const w=String(nom(c)||'').trim().split(/\s+/);return (w.length>1?w[w.length-1]+' '+w.slice(0,-1).join(' '):w[0]||'')};
@@ -425,7 +427,7 @@ alumnos(){const e=edit?al(edit)||{}:{};
  <div><label>Nombre y apellido</label><input id="n" value="${esc(e.nombre)}"></div><div><label>Nacimiento</label><input id="nac" type="date" value="${esc(e.nac)}"></div>
  <div><label>DNI</label><input id="dni" inputmode="numeric" value="${esc(e.dni)}"></div><div><label>Domicilio</label><input id="dom" value="${esc(e.dom)}"></div>
  <div><label>Contacto</label><input id="tel" value="${esc(e.tel)}"></div><div><label>Obra social</label><input id="os" value="${esc(e.os)}"></div><div><label>WhatsApp (opcional)</label><input id="wa" value="${esc(e.wa||'')}"></div>
- <div><label>Categoría</label><select id="cat">${opts(CATS,e.cat)}</select></div><div><label>Días</label><select id="dia">${opts(Object.keys(DIAS),e.dia)}</select></div></div>
+ <div><label>Categoría</label><select id="cat">${opts(CATS,e.cat)}</select></div><div><label>Días</label><select id="dia">${opts(Object.keys(DIAS),e.dia)}</select></div><div style="grid-column:1/-1"><label>Plan de pago</label><select id="plan">${planOpts(e.plan)}</select><small class="mu">Asigná el plan que corresponde. Para hermanos, elegí la tarifa especial solo si todos tienen la misma frecuencia.</small></div></div>
  <div style="margin-top:10px"><label>Disciplina <span class="mu">(tocá una o varias)</span></label><div class="r dsc" id="discs" style="margin-top:0">${DISCS.map(d=>`<button type="button" data-d="${d}" class="${(edit?discs(e):['Parkour']).includes(d)?'on':''}" onclick="this.classList.toggle('on')">${d}</button>`).join('')}</div></div>
  <div class="r"><button class="p" onclick="saveAl()">${edit?'Guardar cambios':'Agregar'}</button>${edit?'<button onclick="edit=null;render()">Cancelar</button>':''}</div>`):'';
  const importar=dueno()?card(`<b>Importar desde la planilla</b><div class="mu">Pegá las filas con encabezados (COD, NOMBRE Y APELLIDO, NACIMIENTO, DNI, DOMICILIO, NUMERO DE CONTACTO, OBRA SOCIAL, CATEGORIA, DIA y, opcional, DISCIPLINA).</div><textarea id="io"></textarea><div class="r"><button class="p" onclick="imp()">Importar alumnos</button></div>`):'';
@@ -746,14 +748,14 @@ function openEd(c){if(!puede())return alert('No tenés permiso para modificar al
  o.innerHTML=`<div class="mod"><div class="top"><b>Editar alumno #${c}</b><span class="mu">${i>=0?(i+1)+' de '+ids.length:''}</span></div>
  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 12px"><div id="e_fp">${avHtml(a,84)}</div><div class="r" style="margin:0;align-items:center"><label class="fbtn">📷 Subir foto<input type="file" accept="image/*" hidden onchange="fotoPick(this,'ed')"></label><button type="button" onclick="fotoQuitar('ed')">Quitar</button><span class="mu">WhatsApp:</span>${waBtn(c)}</div></div>
  <div class="g">${fEd('e_n','Nombre y apellido',a.nombre)}${fEd('e_nac','Nacimiento',a.nac,'date')}${fEd('e_dni','DNI',a.dni)}${fEd('e_dom','Domicilio',a.dom)}${fEd('e_tel','Contacto',a.tel)}${fEd('e_wa','WhatsApp para el botón (opcional)',a.wa||'')}${fEd('e_os','Obra social',a.os)}
- <div><label>Categoría</label><select id="e_cat">${opts(CATS,a.cat)}</select></div><div><label>Días</label><select id="e_dia">${opts(Object.keys(DIAS),a.dia)}</select></div></div>
+ <div><label>Categoría</label><select id="e_cat">${opts(CATS,a.cat)}</select></div><div><label>Días</label><select id="e_dia">${opts(Object.keys(DIAS),a.dia)}</select></div><div style="grid-column:1/-1"><label>Plan de pago</label><select id="e_plan">${planOpts(a.plan)}</select><small class="mu">Tarifa especial de hermanos: usar solo cuando todos los hermanos tienen la misma frecuencia semanal.</small></div></div>
  <div style="margin-top:10px"><label>Disciplina <span class="mu">(tocá una o varias)</span></label><div class="r dsc" id="e_discs" style="margin-top:0">${DISCS.map(d=>`<button type="button" data-d="${d}" class="${discs(a).includes(d)?'on':''}" onclick="this.classList.toggle('on')">${d}</button>`).join('')}</div></div>
  <div class="r" style="margin-top:14px"><button ${i<=0?'disabled':''} onclick="navEd(-1)">◀ Anterior</button><button class="p" onclick="saveEd()">Guardar y cerrar</button><button ${i<0||i>=ids.length-1?'disabled':''} onclick="navEd(1)">Siguiente ▶</button><button onclick="cerrarEd()" style="margin-left:auto">Cerrar sin guardar</button></div>
  <div class="mu" style="margin-top:8px;font-size:12px">Anterior y Siguiente guardan los cambios antes de pasar al otro alumno. Con Esc se cierra sin guardar.</div></div>`;
  document.body.style.overflow='hidden';lista();setTimeout(()=>{const f=$('#e_n');if(f)f.focus()},30)}
 function cerrarEd(){const o=$('#edov');if(o)o.remove();edCod=null;document.body.style.overflow='';lista()}
 async function guardarEd(){if(!puede()){alert('No tenés permiso para modificar alumnos.');return false}const a=al(edCod);if(!a)return false;const n=$('#e_n').value.trim();if(!n){alert('Falta el nombre');return false}
- await put('alumnos',edCod,{...a,nombre:n,nac:$('#e_nac').value,dni:$('#e_dni').value.trim(),dom:$('#e_dom').value.trim(),tel:$('#e_tel').value.trim(),os:$('#e_os').value.trim(),cat:$('#e_cat').value,dia:$('#e_dia').value,disc:[...document.querySelectorAll('#e_discs button.on')].map(b=>b.dataset.d),wa:($('#e_wa')||{value:a.wa||''}).value.trim(),foto:FT.ed!==undefined?FT.ed:(a.foto||'')});return true}
+ await put('alumnos',edCod,{...a,nombre:n,nac:$('#e_nac').value,dni:$('#e_dni').value.trim(),dom:$('#e_dom').value.trim(),tel:$('#e_tel').value.trim(),os:$('#e_os').value.trim(),cat:$('#e_cat').value,dia:$('#e_dia').value,disc:[...document.querySelectorAll('#e_discs button.on')].map(b=>b.dataset.d),wa:($('#e_wa')||{value:a.wa||''}).value.trim(),foto:FT.ed!==undefined?FT.ed:(a.foto||''),plan:$('#e_plan').value});return true}
 async function saveEd(){if(await guardarEd())cerrarEd()}
 async function navEd(d){const c=edCod;if(!await guardarEd())return;const ids=filtAl().map(x=>x.cod),nx=ids[ids.indexOf(c)+d];if(nx!=null)openEd(nx);else cerrarEd()}
 document.addEventListener('keydown',e=>{if(e.key=='Escape'){if($('#waov'))cerrarWa();else if($('#asov'))cerrarAs();else if($('#edov'))cerrarEd()}});
@@ -818,7 +820,7 @@ function discInner(){const sin=actAl().filter(a=>!discs(a).length).length;
 function refDisc(){const e=$('#cdisc');if(e)e.innerHTML=discInner()}
 function setD(i){dsel=DISCS[i];refDisc()}
 const loadJs=u=>new Promise((ok,ko)=>{if(document.querySelector('script[src="'+u+'"]'))return ok();const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>ko(new Error('No se pudo cargar la librería de exportación'));document.head.appendChild(e)});
-function dataExp(k){if(k=='disc')return dataDisc();if(k=='asm')return dataAsm();if(k=='alumnos')return{t:'Lista de alumnos',n:'alumnos',h:['COD','NOMBRE Y APELLIDO','NACIMIENTO','EDAD','DNI','DOMICILIO','NUMERO DE CONTACTO','OBRA SOCIAL','CATEGORIA','DIA','DISCIPLINA'],r:filtAl().map(a=>[a.cod,a.nombre,fd(a.nac),edad(a.nac),a.dni,a.dom,a.tel,a.os,a.cat,a.dia,discs(a).join(' / ')])};
+function dataExp(k){if(k=='disc')return dataDisc();if(k=='asm')return dataAsm();if(k=='alumnos')return{t:'Lista de alumnos',n:'alumnos',h:['COD','NOMBRE Y APELLIDO','NACIMIENTO','EDAD','DNI','DOMICILIO','NUMERO DE CONTACTO','OBRA SOCIAL','CATEGORIA','DIA','DISCIPLINA','PLAN DE PAGO'],r:filtAl().map(a=>[a.cod,a.nombre,fd(a.nac),edad(a.nac),a.dni,a.dom,a.tel,a.os,a.cat,a.dia,discs(a).join(' / '),PLANES.find(x=>x[0]===(a.plan||''))?.[1]||'Sin asignar'])};
  return{t:'Lista de pagos',n:'pagos',h:['FECHA','ALUMNO','DISCIPLINA','MES','METODO','RECARGO 10%','MONTO','CARGO','ESTADO'],r:pagosFilt(true).map(p=>[fd(p.fecha),nom(p.cod),p.disc||'',p.mes,p.met,p.rec||0,p.monto,p.por,p.estado])}}
 async function exp(k,f){
  const D=dataExp(k);
@@ -939,7 +941,7 @@ async function recibo(id){
  }catch(e){alert('No se pudo generar el recibo: '+((e&&e.message)||e))}
 }
 function saveAl(){if(!puede())return alert('No tenés permiso para modificar alumnos.');const n=$('#n').value.trim();if(!n)return alert('Falta el nombre');const cod=edit||nextCod();
- put('alumnos',cod,{...(edit?al(edit)||{}:{}),cod,activo:edit?(al(edit)||{}).activo!==false:true,nombre:n,nac:$('#nac').value,dni:$('#dni').value.trim(),dom:$('#dom').value.trim(),tel:$('#tel').value.trim(),os:$('#os').value.trim(),cat:$('#cat').value,dia:$('#dia').value,disc:[...document.querySelectorAll('#discs button.on')].map(b=>b.dataset.d),wa:($('#wa')||{value:''}).value.trim(),foto:FT.new!==undefined?FT.new:((edit&&(al(edit)||{}).foto)||'')});delete FT.new;edit=null;nuevoOpen=false}
+ put('alumnos',cod,{...(edit?al(edit)||{}:{}),cod,activo:edit?(al(edit)||{}).activo!==false:true,nombre:n,nac:$('#nac').value,dni:$('#dni').value.trim(),dom:$('#dom').value.trim(),tel:$('#tel').value.trim(),os:$('#os').value.trim(),cat:$('#cat').value,dia:$('#dia').value,disc:[...document.querySelectorAll('#discs button.on')].map(b=>b.dataset.d),wa:($('#wa')||{value:''}).value.trim(),foto:FT.new!==undefined?FT.new:((edit&&(al(edit)||{}).foto)||''),plan:$('#plan').value});delete FT.new;edit=null;nuevoOpen=false}
 async function baja(c,on){if(!puede())return alert('No tenés permiso.');const a=al(c);if(!a)return;if(!on&&!confirm('¿Dar de baja a '+a.nombre+'?'))return;await put('alumnos',c,{...a,activo:on})}
 async function moverAl(c,campo,v){if(!puede())return alert('No tenés permiso.');const a=al(c);if(!a)return;const n={...a,[campo]:v},k=(C.cupos[n.cat+'__'+n.dia]||{}).cupo??15,ocup=actAl().filter(x=>x.cod!=c&&x.cat==n.cat&&x.dia==n.dia).length;
  if(ocup>=k&&!confirm('El grupo '+n.cat+' · '+n.dia+' ya tiene el cupo completo ('+ocup+'/'+k+'). ¿Mover igual?')){render();return}await put('alumnos',c,n)}
