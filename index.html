@@ -213,7 +213,8 @@ const rm=async(k,id)=>{
 };
 
 const uid=()=>String(Date.now())+Math.floor(Math.random()*99);
-const PLANES=[['','— Seleccionar plan —'],['individual','Clase individual · $10.000'],['1x','1 vez por semana · $31.000'],['2x','2 veces por semana · $41.000'],['3x','3 veces por semana · $51.000'],['hermanos2x','Hermanos · 2 veces por semana · $35.000'],['hermanos3x','Hermanos · 3 veces por semana · $45.000']];
+const PLANES=[['','— Seleccionar plan —'],['individual','Clase individual · $10.000'],['1x','1 vez por semana · $31.000'],['2x','2 veces por semana · $41.000'],['3x','3 veces por semana · $51.000']]; 
+const PLAN_VALORES={individual:10000,'1x':31000,'2x':41000,'3x':51000};
 const planOpts=v=>PLANES.map(([k,t])=>`<option value="${k}" ${k===(v||'')?'selected':''}>${t}</option>`).join('');
 const card=h=>`<div class="card">${h}</div>`,opts=(a,s)=>a.map(x=>`<option ${x==s?'selected':''}>${esc(x)}</option>`).join('');
 const al=c=>C.alumnos[c],nom=c=>al(c)?al(c).nombre:'(eliminado)',pn=id=>(C.profes[id]||{nombre:'(eliminado)'}).nombre;
@@ -431,7 +432,7 @@ alumnos(){const e=edit?al(edit)||{}:{};
  <div style="margin-top:10px"><label>Disciplina <span class="mu">(tocá una o varias)</span></label><div class="r dsc" id="discs" style="margin-top:0">${DISCS.map(d=>`<button type="button" data-d="${d}" class="${(edit?discs(e):['Parkour']).includes(d)?'on':''}" onclick="this.classList.toggle('on')">${d}</button>`).join('')}</div></div>
  <div class="r"><button class="p" onclick="saveAl()">${edit?'Guardar cambios':'Agregar'}</button>${edit?'<button onclick="edit=null;render()">Cancelar</button>':''}</div>`):'';
  const importar=dueno()?card(`<b>Importar desde la planilla</b><div class="mu">Pegá las filas con encabezados (COD, NOMBRE Y APELLIDO, NACIMIENTO, DNI, DOMICILIO, NUMERO DE CONTACTO, OBRA SOCIAL, CATEGORIA, DIA y, opcional, DISCIPLINA).</div><textarea id="io"></textarea><div class="r"><button class="p" onclick="imp()">Importar alumnos</button></div>`):'';
- return migCard()+planesPendientesCard()+(puede()&&!edit?card(`<button class="${nuevoOpen?'':'p'}" onclick="nuevoOpen=!nuevoOpen;render()">${nuevoOpen?'✖ Cerrar formulario':'➕ Nuevo alumno'}</button>`):'')+((nuevoOpen||edit)?edicion:'')
+ return migCard()+(puede()&&!edit?card(`<button class="${nuevoOpen?'':'p'}" onclick="nuevoOpen=!nuevoOpen;render()">${nuevoOpen?'✖ Cerrar formulario':'➕ Nuevo alumno'}</button>`):'')+((nuevoOpen||edit)?edicion:'')
  +card(`<div class="r" style="margin:0 0 8px"><input id="qb" autocomplete="off" placeholder="Buscar por nombre, DNI, domicilio, teléfono…" value="${esc(q)}" oninput="q=this.value;lista()" style="flex:1;min-width:200px"><button onclick="exp('alumnos','xlsx')">📊 Excel</button><button onclick="exp('alumnos','pdf')">📄 PDF</button></div><div class="mu" style="margin-bottom:8px">${puede()?'Listado y administración de alumnos':'Listado de alumnos'}</div><div id="lista">${tablaAl()}</div>`)
  +card(`<div id="cdisc">${discInner()}</div>`)
  +(dueno()?card(`<button onclick="impOpen=!impOpen;render()">${impOpen?'✖ Cerrar importación':'📥 Importar desde la planilla'}</button>`):'')+(impOpen?importar:'')},
@@ -447,7 +448,10 @@ cobros(){const all=L('pend').filter(p=>p.estado!='rechazado').sort(ordPagos),mt=
  <div><label>Fecha de cobro</label><input id="edf" type="date" value="${esc(ep.fecha)}"></div></div>
  <div class="r"><button class="p" onclick="savePago()">Guardar cambios</button><button onclick="edit=null;render()">Cancelar</button></div>`):'';
  const alta=puede()?card(`<b>Registrar cobro (queda pendiente de acreditar)</b><div class="g gf" style="margin-top:12px"><div><label>Disciplina</label><select id="pdisc" onchange="refPa()">${opts(DALL,pdsel)}</select></div><div><label>Alumno · faltan <span id="pfalt">${faltanPa(mes).length}</span></label><select id="pa">${optsPa(mes)}</select></div>
- <div><label>Mes que paga</label><input id="pm" type="month" value="${mes}" onchange="refPa();refRec(true)"></div><div><label>Monto de la cuota</label><input id="pt" type="number" inputmode="numeric" oninput="refRec()"></div>
+ <div><label>Mes que paga</label><input id="pm" type="month" value="${mes}" onchange="refPa();refRec(true)"></div>
+ <div style="grid-column:1/-1"><label>Mensualidad · seleccionar plan</label><select id="pplan" onchange="planMonto()">${planOpts('')}</select></div>
+ <div><label id="ptlabel">Monto a cobrar ($)</label><input id="pt" type="number" inputmode="numeric" placeholder="Escribí el monto" oninput="refRec()"></div>
+ <div style="grid-column:1/-1"><label>Otros conceptos</label><div class="r" style="margin-top:0"><button type="button" onclick="cobroConcepto('Inscripción')">＋ Inscripción</button><button type="button" onclick="cobroConcepto('Otro monto')">＋ Otro monto para acreditar</button><button type="button" onclick="cobroConcepto('Mensualidad')">Mensualidad</button></div><small class="mu" id="pconcepto">Concepto: Mensualidad</small></div>
  <div style="grid-column:1/-1;margin:8px 0 6px"><label>Método</label>${metHtml('mA',lastMet)}</div><div><label>Fecha de cobro</label><input id="pf" type="date" value="${hoy}" onchange="refRec(true)"></div>
  <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${(recOn=recAuto(mes,hoy),'')}<button type="button" id="recb" class="${recOn?'p':''}" onclick="togRec()">${recOn?'✔ Recargo 10% aplicado':'＋ Aplicar recargo 10%'}</button><span id="rect" class="mu">${recTxt(0,mes,hoy)}</span></div></div><div class="r"><button class="p" onclick="addPend()">Registrar cobro</button></div>`):'';
  const resum=!dueno()?'':card(`<div class="top"><b>Acreditado por disciplina · ${esc(mesTxt(mes))}</b></div><div class="k">${DALL.map(d=>{const x=L('pagos').filter(p=>p.mes==mes&&p.disc==d);return `<div>${d}<b class="ok">${$$(x.reduce((t,p)=>t+p.monto,0))}</b><span class="mu">${x.length} pago${x.length==1?'':'s'}</span></div>`}).join('')}</div>`);
@@ -725,7 +729,7 @@ async function savePago(){
  await put('pend',id,n);
  if(p.estado=='acreditado')await put('pagos',id,{id,cod:c,mes:mm,monto:m+rec,base:m,rec,met,fecha:f,por:p.por,disc:n.disc});
 }
-window.refPa=refPa;window.metSel=metSel;window.savePago=savePago;
+window.refPa=refPa;window.metSel=metSel;window.savePago=savePago;window.planMonto=planMonto;window.cobroConcepto=cobroConcepto;
 const SEED=[['IGNACIO',5500],['AGUSTIN',5500],['MARTIN',7000],['SEBA',7000],['EZEQUIEL',7000],['BRIAN',4500],['MARCOS',8000]];
 const seedC=()=>{const ex=new Set(L('profes').map(p=>p.nombre.trim().toUpperCase()));return SEED.some(([n])=>!ex.has(n))?card(`<b>Profesores de tu tabla de octubre</b><div class="mu">Carga a ${SEED.map(([n,v])=>n+' ('+$$(v)+')').join(', ')} con su valor hora, y marca el feriado del 12/10. No duplica los que ya existan.</div><div class="r"><button class="p" onclick="seedProfes()">Cargar profesores</button></div>`):''};
 async function seedProfes(){if(!dueno())return alert('Solo el dueño puede cargar profesores.');const ex=new Set(L('profes').map(p=>p.nombre.trim().toUpperCase()));let i=0;
@@ -953,8 +957,11 @@ async function moverAl(c,campo,v){if(!puede())return alert('No tenés permiso.')
  if(ocup>=k&&!confirm('El grupo '+n.cat+' · '+n.dia+' ya tiene el cupo completo ('+ocup+'/'+k+'). ¿Mover igual?')){render();return}await put('alumnos',c,n)}
 async function setCupo(c,d,v){if(!puede())return alert('No tenés permiso.');const id=c+'__'+d;await put('cupos',id,{id,cupo:Math.max(0,parseInt(v)||0)})}
 function delAl(c){if(!dueno())return alert('Solo el dueño puede eliminar alumnos.');if(confirm('¿Eliminar a '+nom(c)+'?'))rm('alumnos',c)}
-function addPend(){if(!puede())return alert('No tenés permiso para registrar cobros.');const m=+$('#pt').value,c=+$('#pa').value;if(!c||!m)return alert('Elegí alumno y monto');const id=uid();mes=$('#pm').value;lastMet=getMet('mA','Efectivo');pdsel=$('#pdisc').value;const rec=recOn?Math.round(m*.1):0;
- put('pend',id,{id,cod:c,mes:$('#pm').value,monto:m+rec,base:m,rec,met:lastMet,fecha:$('#pf').value,por:me.nombre,estado:'pendiente',disc:pdsel})}
+let conceptoCobro='Mensualidad';
+function planMonto(){const k=$('#pplan')?.value||'';if(k){$('#pt').value=PLAN_VALORES[k]||'';conceptoCobro='Mensualidad';$('#pconcepto').textContent='Concepto: Mensualidad';$('#ptlabel').textContent='Monto de la mensualidad ($)';refRec()}}
+function cobroConcepto(tipo){conceptoCobro=tipo;$('#pconcepto').textContent='Concepto: '+tipo;$('#ptlabel').textContent=tipo==='Inscripción'?'Monto de inscripción ($)':'Monto a acreditar ($)';if(tipo!=='Mensualidad'&&$('#pplan'))$('#pplan').value='';$('#pt').value='';$('#pt').focus();refRec()}
+function addPend(){if(!puede())return alert('No tenés permiso para registrar cobros.');const m=+$('#pt').value,c=+$('#pa').value;if(!c||!m)return alert('Elegí alumno y escribí el monto');const id=uid();mes=$('#pm').value;lastMet=getMet('mA','Efectivo');pdsel=$('#pdisc').value;const rec=recOn?Math.round(m*.1):0;
+ put('pend',id,{id,cod:c,mes:$('#pm').value,monto:m+rec,base:m,rec,met:lastMet,fecha:$('#pf').value,por:me.nombre,estado:'pendiente',disc:pdsel,concepto:conceptoCobro})}
 async function acre(id){if(!dueno()&&me?.rol!='coordinador')return alert('No tenés permiso para acreditar pagos.');const p=C.pend[id];if(!p)return alert('Pago no encontrado.');await put('pagos',id,{id,cod:p.cod,mes:p.mes,monto:p.monto,base:p.base??p.monto,rec:p.rec||0,met:p.met,fecha:p.fecha,por:p.por,disc:p.disc||''});await put('pend',id,{...p,estado:'acreditado'})}
 const rech=id=>{if(!puede())return alert('No tenés permiso para rechazar pagos.');if(!confirm('¿Rechazar este cobro? Se quita del historial.'))return;return rm('pend',id)};
 async function delRech(){if(!dueno())return alert('Solo el dueño puede eliminar cobros.');const R=L('pend').filter(p=>p.estado=='rechazado');if(!R.length)return;if(!confirm('Se eliminarán '+R.length+' cobros rechazados del historial. ¿Continuar?'))return;for(const p of R){await rm('pagos',p.id);await rm('pend',p.id)}}
