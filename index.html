@@ -326,13 +326,13 @@ function rr(){if(isIn()){dirty=true;if(tab=='alumnos')lista();const t=$('#tot');
 addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isIn()){dirty=false;render()}},80));
 
 // CAMBIO 2: pestañas por rol
-const tabsFor=()=>dueno()?{resumen:'Resumen',alumnos:'Alumnos',cobros:'Pagos',caja:'Caja',asist:'Asist. alumnos',grupos:'Grupos y turnos',notas:'Notas',profes:'Profesores',users:'Usuarios'}:{alumnos:'Alumnos',asist:'Asist. alumnos',grupos:'Grupos y turnos',cobros:'Pagos',notas:'Notas'};
+const tabsFor=()=>dueno()?{resumen:'Resumen',alumnos:'Alumnos',cobros:'Pagos',caja:'Caja',asist:'Asist. alumnos',grupos:'Grupos y turnos',colonia:'Colonia 2027',notas:'Notas',profes:'Profesores',users:'Usuarios'}:{alumnos:'Alumnos',asist:'Asist. alumnos',grupos:'Grupos y turnos',cobros:'Pagos',colonia:'Colonia 2027',notas:'Notas'};
 function render(){const a=$('#app');
  if(!db)return a.innerHTML=card('Para usar el sistema abrí este link con tu cuenta de este sistema, con el acceso que te dio el dueño.');
- if(!loaded)return;if(!me){nStop();return a.innerHTML=loginV()}nSub();
+ if(!loaded)return;if(!me){nStop();return a.innerHTML=loginV()}nSub();cSub();
  const T=tabsFor();if(!T[tab])tab=Object.keys(T)[0];
  // CAMBIO 3: nunca dibujar una pestaña no permitida
- const NN=nNL();document.title=(NN?'('+NN+') ':'')+'ORQUERA PARKOUR KINECT';a.innerHTML=`<div class="top"><b>${esc(me.nombre)} <span class="mu">· ${me.rol}</span></b><button onclick="salir()">Salir</button></div><nav>${Object.keys(T).map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';q='';edit=null;render()">${T[k]}${k=='notas'&&NN?` <span class="bdg">${NN}</span>`:''}</button>`).join('')}</nav>`+(NN&&tab!='notas'?`<div class="scb" style="margin:0 0 12px;border-color:var(--ac);background:rgba(35,136,255,.12)"><span>🔔 Tenés <b>${NN}</b> novedad${NN>1?'es':''} en Notas</span><button class="p" onclick="tab='notas';render()">Ver notas</button></div>`:'')+(T[tab]?V[tab]():'')}
+ const NN=nNL();document.title=(NN?'('+NN+') ':'')+'ORQUERA PARKOUR KINECT';a.innerHTML=`<div class="top"><b>${esc(me.nombre)} <span class="mu">· ${me.rol}</span></b><button onclick="salir()">Salir</button></div><nav>${Object.keys(T).map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';q='';edit=null;render()">${T[k]}${k=='notas'&&NN?` <span class="bdg">${NN}</span>`:''}${k=='colonia'&&cNuevas()?` <span class="bdg">${cNuevas()}</span>`:''}</button>`).join('')}</nav>`+(NN&&tab!='notas'?`<div class="scb" style="margin:0 0 12px;border-color:var(--ac);background:rgba(35,136,255,.12)"><span>🔔 Tenés <b>${NN}</b> novedad${NN>1?'es':''} en Notas</span><button class="p" onclick="tab='notas';render()">Ver notas</button></div>`:'')+(T[tab]?V[tab]():'')}
 function loginV(){
  const n=!L('usr').length;
  const vol='<button onclick="rol=null;render()">← Volver</button>';
@@ -575,7 +575,7 @@ const nSet=async(id,d)=>{try{await window.FB.setDoc(nRef(id),d)}catch(e){nErr(e)
 const nUpd=async(id,d)=>{try{await window.FB.updateDoc(nRef(id),d)}catch(e){nErr(e)}};
 function nSub(){if(nTried||!me||!window.FB||!window.FB.onSnapshot)return;nTried=true;
  try{nUnsub=window.FB.onSnapshot(window.FB.collection(window.FB.db,'notas'),snap=>{const o={};snap.forEach(d=>o[d.id]=d.data());C.notas=o;NERR='';rr()},e=>{console.error('notas',e);NERR=String((e&&e.message)||e);rr()})}catch(e){console.error(e)}}
-function nStop(){if(nUnsub){try{nUnsub()}catch(e){}}nUnsub=null;nTried=false;C.notas={};NERR=''}
+function nStop(){cStop();if(nUnsub){try{nUnsub()}catch(e){}}nUnsub=null;nTried=false;C.notas={};NERR=''}
 async function addNota(){const x=nd.x.trim();if(!x)return alert('Escribí la nota.');const id=uid(),t=nd.t.trim();
  const d={id,titulo:t,texto:x,prio:nd.p,alumno:nd.a||'',fijada:!!nd.f,autor:me.nombre,u:me.u,fecha:nowIso(),cerrada:false,coms:[],leido:{[uk()]:nowIso()}};
  nd={t:'',x:'',p:'normal',a:'',f:false};await nSet(id,d)}
@@ -833,7 +833,7 @@ function discInner(){const sin=actAl().filter(a=>!discs(a).length).length;
 function refDisc(){const e=$('#cdisc');if(e)e.innerHTML=discInner()}
 function setD(i){dsel=DISCS[i];refDisc()}
 const loadJs=u=>new Promise((ok,ko)=>{if(document.querySelector('script[src="'+u+'"]'))return ok();const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>ko(new Error('No se pudo cargar la librería de exportación'));document.head.appendChild(e)});
-function dataExp(k){if(k=='disc')return dataDisc();if(k=='asm')return dataAsm();if(k=='alumnos')return{t:'Lista de alumnos',n:'alumnos',h:['COD','NOMBRE Y APELLIDO','NACIMIENTO','EDAD','DNI','DOMICILIO','NUMERO DE CONTACTO','OBRA SOCIAL','CATEGORIA','DIA','DISCIPLINA','PLAN DE PAGO'],r:filtAl().map(a=>[a.cod,a.nombre,fd(a.nac),edad(a.nac),a.dni,a.dom,a.tel,a.os,a.cat,a.dia,discs(a).join(' / '),PLANES.find(x=>x[0]===(a.plan||''))?.[1]||'Sin asignar'])};
+function dataExp(k){if(k=='col')return dataCol();if(k=='disc')return dataDisc();if(k=='asm')return dataAsm();if(k=='alumnos')return{t:'Lista de alumnos',n:'alumnos',h:['COD','NOMBRE Y APELLIDO','NACIMIENTO','EDAD','DNI','DOMICILIO','NUMERO DE CONTACTO','OBRA SOCIAL','CATEGORIA','DIA','DISCIPLINA','PLAN DE PAGO'],r:filtAl().map(a=>[a.cod,a.nombre,fd(a.nac),edad(a.nac),a.dni,a.dom,a.tel,a.os,a.cat,a.dia,discs(a).join(' / '),PLANES.find(x=>x[0]===(a.plan||''))?.[1]||'Sin asignar'])};
  return{t:'Lista de pagos',n:'pagos',h:['FECHA','ALUMNO','DISCIPLINA','MES','METODO','RECARGO 10%','MONTO','CARGO','ESTADO'],r:pagosFilt(true).map(p=>[fd(p.fecha),nom(p.cod),p.disc||'',p.mes,p.met,p.rec||0,p.monto,p.por,p.estado])}}
 async function exp(k,f){
  const D=dataExp(k);
@@ -1283,6 +1283,57 @@ function repMes(f){
   blocks:[BR,BP,BD],total:['Total recaudado',tot],sign:['Responsable de caja','Firma de la dirección']},f);
 }
 
+/* ====== COLONIA DE VERANO 2027: inscripciones que llegan desde la web (colección "colonia") ====== */
+C.colonia={};
+let cUnsub=null,cTried=false,CERR='',cq='',cfe='',cVer=null;
+const CEST=[['nueva','🆕 Nueva'],['contactada','📞 Contactada'],['sena','💵 Seña pagada'],['confirmada','✅ Confirmada'],['cancelada','✖ Cancelada']];
+const cEstTxt=e=>(CEST.find(x=>x[0]==e)||[e,e||'—'])[1];
+const cNuevas=()=>me?L('colonia').filter(x=>(x.estado||'nueva')=='nueva').length:0;
+function cSub(){if(cTried||!me||!window.FB||!window.FB.onSnapshot)return;cTried=true;
+ try{cUnsub=window.FB.onSnapshot(window.FB.collection(window.FB.db,'colonia'),snap=>{const o={};snap.forEach(d=>o[d.id]={...d.data(),id:d.id});C.colonia=o;CERR='';rr()},e=>{console.error('colonia',e);CERR=String((e&&e.message)||e);rr()})}catch(e){console.error(e)}}
+function cStop(){if(cUnsub){try{cUnsub()}catch(e){}}cUnsub=null;cTried=false;C.colonia={};CERR=''}
+const cRef=id=>window.FB.doc(window.FB.db,'colonia',String(id));
+const cErrF=e=>{console.error(e);alert('No se pudo guardar en Colonia: '+((e&&e.message)||e))};
+async function cEstado(id,v){try{await window.FB.updateDoc(cRef(id),{estado:v,actualizado:new Date().toISOString(),por:me.nombre})}catch(e){cErrF(e)}}
+async function cNota(id,v){try{await window.FB.updateDoc(cRef(id),{nota:String(v||'')})}catch(e){cErrF(e)}}
+async function cDel(id){if(!dueno())return alert('Solo el dueño puede eliminar inscripciones.');const x=C.colonia[id];if(!x)return;
+ if(!confirm('¿Eliminar definitivamente la inscripción de '+(x.nombre||'')+'? Se borran también las fotos del DNI.'))return;
+ try{await window.FB.deleteDoc(cRef(id));cCerrar()}catch(e){cErrF(e)}}
+const cLista=()=>{const t=norm(cq).split(/\s+/).filter(Boolean);
+ return L('colonia').filter(x=>(!cfe||(x.estado||'nueva')==cfe)&&(!t.length||(h=>t.every(w=>h.includes(w)))(norm([x.nombre,x.cuil,x.dom,x.telPadre,x.telMadre,x.os].join(' ')))))
+  .sort((a,b)=>String(b.creado||'').localeCompare(String(a.creado||'')))};
+const cTel=x=>[x.telPadre,x.telMadre].filter(Boolean).join(' / ');
+const cWa=x=>{const n=waNorm(x.telPadre)||waNorm(x.telMadre);if(!n)return '';const m=encodeURIComponent('Hola! Te escribimos de Orquera Parkour Kinect por la inscripción de '+(x.nombre||'')+' a la Colonia de Parkour Verano 2027. ');return `<a class="fbtn wab" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${n}?text=${m}">💬</a>`};
+function dataCol(){return{t:'Inscripciones Colonia de Parkour Verano 2027',n:'colonia_2027',h:['FECHA INSCRIPCIÓN','APELLIDO Y NOMBRE','NACIMIENTO','EDAD','CUIL','DOMICILIO','TEL. PADRE','TEL. MADRE/FAMILIAR','OBRA SOCIAL','ESTADO','NOTA'],
+ r:cLista().map(x=>[fh(x.creado),x.nombre,fd(x.nac),edad(x.nac),x.cuil,x.dom,x.telPadre||'',x.telMadre||'',x.os,cEstTxt(x.estado||'nueva').replace(/^\S+\s/,''),x.nota||''])}}
+V.colonia=function(){
+ const all=L('colonia'),cnt=e=>all.filter(x=>(x.estado||'nueva')==e).length,rows=cLista();
+ const err=CERR?card(`<b class="bad">No se pueden leer las inscripciones de la colonia</b><div class="mu" style="margin:6px 0">${esc(CERR)}</div><div class="mu">Hay que agregar la colección <b>colonia</b> en las reglas de Firestore (Firebase → Firestore → Reglas). Las reglas están en las instrucciones que te pasaron junto con este archivo.</div>`):'';
+ const kp=card(`<div class="top" style="flex-wrap:wrap;gap:8px"><b>Colonia de Parkour Verano 2027 · Inscripciones</b><div class="r" style="margin:0"><button onclick="exp('col','xlsx')">📊 Excel</button><button onclick="exp('col','pdf')">📄 PDF</button></div></div>
+ <div class="k" style="margin-top:8px"><div>Inscriptos<b>${all.length}</b></div>${CEST.map(([k,l])=>`<div>${l.replace(/^\S+\s/,'')}<b class="${k=='nueva'&&cnt(k)?'bad':k=='confirmada'?'ok':''}">${cnt(k)}</b></div>`).join('')}</div>
+ <div class="mu" style="margin-top:8px">Se cargan solas cuando una familia completa el formulario de la página de la colonia. Tocá 👁 para ver todos los datos y las fotos del DNI.</div>`);
+ const filt=`<div class="r dsc" style="margin:0 0 8px"><button class="${!cfe?'on':''}" onclick="cfe='';render()">Todas · ${all.length}</button>${CEST.map(([k,l])=>`<button class="${cfe==k?'on':''}" onclick="cfe='${k}';render()">${l} · ${cnt(k)}</button>`).join('')}</div>
+ <div class="r" style="margin:0 0 8px"><input id="cq" type="search" autocomplete="off" placeholder="Buscar por nombre, CUIL, teléfono, domicilio…" value="${esc(cq)}" oninput="cq=this.value;cRef2()" style="flex:1;min-width:200px"></div>`;
+ return err+kp+card(filt+`<div id="ctab">${cTabla(rows)}</div>`)};
+function cTabla(rows){rows=rows||cLista();if(!rows.length)return `<div class="mu" style="padding:8px 0">${L('colonia').length?'No hay inscripciones con este filtro.':'Todavía no llegó ninguna inscripción.'}</div>`;
+ return `<div class="w vs"><table class="pt"><tr><th>Fecha</th><th>Niño/a</th><th>Edad</th><th>CUIL</th><th>Teléfonos</th><th>Obra social</th><th>Estado</th><th class="ac">Acciones</th></tr>${rows.map(x=>`<tr${(x.estado||'nueva')=='nueva'?' class="rowed"':''}><td>${fh(x.creado)}</td><td><b class="lk" onclick="cAbrir('${x.id}')">${esc(x.nombre)}</b></td><td>${edad(x.nac)}</td><td>${esc(x.cuil)}</td><td>${esc(cTel(x))}</td><td>${esc(x.os)}</td>
+ <td><select onchange="cEstado('${x.id}',this.value)">${CEST.map(([k,l])=>`<option value="${k}" ${(x.estado||'nueva')==k?'selected':''}>${l}</option>`).join('')}</select></td>
+ <td class="ac"><div class="ab"><button title="Ver datos y DNI" onclick="cAbrir('${x.id}')">👁</button>${cWa(x)}${dueno()?`<button title="Eliminar" onclick="cDel('${x.id}')">🗑</button>`:''}</div></td></tr>`).join('')}</table></div><div class="mu" style="margin-top:6px">${rows.length} de ${L('colonia').length} inscripciones</div>`}
+function cRef2(){const e=$('#ctab');if(e)e.innerHTML=cTabla()}
+function cAbrir(id){const x=C.colonia[id];if(!x)return;cVer=id;
+ let o=$('#colov');if(!o){o=document.createElement('div');o.id='colov';o.className='ov';o.onclick=e=>{if(e.target===o)cCerrar()};document.body.appendChild(o)}
+ const f=(l,v)=>`<div><label>${l}</label><div style="font-size:15px;font-weight:600;word-break:break-word">${esc(v||'—')}</div></div>`;
+ const img=(src,l)=>src?`<figure style="margin:0;flex:1 1 260px"><label>${l}</label><a href="${src}" download="${esc((x.nombre||'dni').replace(/[^\wÁÉÍÓÚÑáéíóúñ]+/g,'_'))}_${l.replace(/\s+/g,'_')}.jpg" title="Descargar foto"><img src="${src}" alt="${l}" style="width:100%;border-radius:10px;border:1px solid var(--bd);background:#000"></a><small class="mu">Tocá la foto para descargarla</small></figure>`:`<div class="mu">Sin foto de ${l}</div>`;
+ o.innerHTML=`<div class="mod"><div class="top"><div><b>${esc(x.nombre)}</b><div class="mu">Inscripción del ${fh(x.creado)} · Colonia de Parkour Verano 2027</div></div><button onclick="cCerrar()">✖</button></div>
+ <div class="g" style="margin:12px 0;gap:14px">${f('Fecha de nacimiento',fd(x.nac)+(x.nac?' ('+edad(x.nac)+' años)':''))}${f('CUIL',x.cuil)}${f('Domicilio',x.dom)}${f('Teléfono padre',x.telPadre)}${f('Teléfono madre / familiar',x.telMadre)}${f('Obra social',x.os)}${f('Aceptó términos',x.acepta?'Sí':'No')}</div>
+ <div class="r" style="gap:14px;align-items:flex-start">${img(x.dniFrente,'DNI frente')}${img(x.dniDorso,'DNI dorso')}</div>
+ <div style="margin-top:12px"><label>Estado</label><select onchange="cEstado('${x.id}',this.value)">${CEST.map(([k,l])=>`<option value="${k}" ${(x.estado||'nueva')==k?'selected':''}>${l}</option>`).join('')}</select>${x.por?` <span class="mu">· último cambio: ${esc(x.por)}</span>`:''}</div>
+ <div style="margin-top:10px"><label>Nota interna (seña, observaciones…)</label><textarea onchange="cNota('${x.id}',this.value)">${esc(x.nota||'')}</textarea></div>
+ <div class="r" style="margin-top:12px">${cWa(x)}${dueno()?`<button onclick="cDel('${x.id}')" style="margin-left:auto">🗑 Eliminar inscripción</button>`:''}</div></div>`;
+ document.body.style.overflow='hidden'}
+function cCerrar(){const o=$('#colov');if(o)o.remove();cVer=null;document.body.style.overflow=''}
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#colov'))cCerrar()});
+window.cEstado=cEstado;window.cNota=cNota;window.cDel=cDel;window.cAbrir=cAbrir;window.cCerrar=cCerrar;window.cRef2=cRef2;
 
 window.mes = mes; window.fecha = fecha; window.q = q; window.tab = tab; window.edit = edit; window.rol = rol;
 window.render = render; window.salir = salir; window.login = login; window.setup = setup;
