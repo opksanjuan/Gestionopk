@@ -1285,13 +1285,14 @@ function repMes(f){
 
 /* ====== COLONIA DE VERANO 2027: inscripciones que llegan desde la web (colección "colonia") ====== */
 C.colonia={};
-let cUnsub=null,cTried=false,CERR='',cq='',cfe='',cVer=null;
+let cUnsub=null,cUnsub2=null,cTried=false,CERR='',cq='',cfe='',cVer=null,CUPO={usados:0,total:40,existe:false};
 const CEST=[['nueva','🆕 Nueva'],['contactada','📞 Contactada'],['sena','💵 Seña pagada'],['confirmada','✅ Confirmada'],['cancelada','✖ Cancelada']];
 const cEstTxt=e=>(CEST.find(x=>x[0]==e)||[e,e||'—'])[1];
 const cNuevas=()=>me?L('colonia').filter(x=>(x.estado||'nueva')=='nueva').length:0;
 function cSub(){if(cTried||!me||!window.FB||!window.FB.onSnapshot)return;cTried=true;
- try{cUnsub=window.FB.onSnapshot(window.FB.collection(window.FB.db,'colonia'),snap=>{const o={};snap.forEach(d=>o[d.id]={...d.data(),id:d.id});C.colonia=o;CERR='';rr()},e=>{console.error('colonia',e);CERR=String((e&&e.message)||e);rr()})}catch(e){console.error(e)}}
-function cStop(){if(cUnsub){try{cUnsub()}catch(e){}}cUnsub=null;cTried=false;C.colonia={};CERR=''}
+ try{cUnsub=window.FB.onSnapshot(window.FB.collection(window.FB.db,'colonia'),snap=>{const o={};snap.forEach(d=>o[d.id]={...d.data(),id:d.id});C.colonia=o;CERR='';rr()},e=>{console.error('colonia',e);CERR=String((e&&e.message)||e);rr()});
+ cUnsub2=window.FB.onSnapshot(window.FB.doc(window.FB.db,'coloniaCupos','2027'),d=>{CUPO=d.exists()?{usados:0,total:40,...d.data(),existe:true}:{usados:0,total:40,existe:false};rr()},e=>console.error('cupos',e))}catch(e){console.error(e)}}
+function cStop(){if(cUnsub){try{cUnsub()}catch(e){}}if(cUnsub2){try{cUnsub2()}catch(e){}}cUnsub=null;cUnsub2=null;cTried=false;C.colonia={};CERR=''}
 const cRef=id=>window.FB.doc(window.FB.db,'colonia',String(id));
 const cErrF=e=>{console.error(e);alert('No se pudo guardar en Colonia: '+((e&&e.message)||e))};
 async function cEstado(id,v){try{await window.FB.updateDoc(cRef(id),{estado:v,actualizado:new Date().toISOString(),por:me.nombre})}catch(e){cErrF(e)}}
@@ -1299,6 +1300,9 @@ async function cNota(id,v){try{await window.FB.updateDoc(cRef(id),{nota:String(v
 async function cDel(id){if(!dueno())return alert('Solo el dueño puede eliminar inscripciones.');const x=C.colonia[id];if(!x)return;
  if(!confirm('¿Eliminar definitivamente la inscripción de '+(x.nombre||'')+'? Se borran también las fotos del DNI.'))return;
  try{await window.FB.deleteDoc(cRef(id));cCerrar()}catch(e){cErrF(e)}}
+const cActivas=()=>L('colonia').filter(x=>(x.estado||'nueva')!='cancelada').length;
+async function cCupoSet(usados,total){if(!puede())return alert('No tenés permiso.');usados=Math.max(0,parseInt(usados)||0);total=Math.max(0,parseInt(total)||0);
+ try{await window.FB.setDoc(window.FB.doc(window.FB.db,'coloniaCupos','2027'),{usados,total,ultimo:CUPO.ultimo||''})}catch(e){cErrF(e)}}
 const cLista=()=>{const t=norm(cq).split(/\s+/).filter(Boolean);
  return L('colonia').filter(x=>(!cfe||(x.estado||'nueva')==cfe)&&(!t.length||(h=>t.every(w=>h.includes(w)))(norm([x.nombre,x.cuil,x.dom,x.telPadre,x.telMadre,x.os].join(' ')))))
   .sort((a,b)=>String(b.creado||'').localeCompare(String(a.creado||'')))};
@@ -1314,7 +1318,11 @@ V.colonia=function(){
  <div class="mu" style="margin-top:8px">Se cargan solas cuando una familia completa el formulario de la página de la colonia. Tocá 👁 para ver todos los datos y las fotos del DNI.</div>`);
  const filt=`<div class="r dsc" style="margin:0 0 8px"><button class="${!cfe?'on':''}" onclick="cfe='';render()">Todas · ${all.length}</button>${CEST.map(([k,l])=>`<button class="${cfe==k?'on':''}" onclick="cfe='${k}';render()">${l} · ${cnt(k)}</button>`).join('')}</div>
  <div class="r" style="margin:0 0 8px"><input id="cq" type="search" autocomplete="off" placeholder="Buscar por nombre, CUIL, teléfono, domicilio…" value="${esc(cq)}" oninput="cq=this.value;cRef2()" style="flex:1;min-width:200px"></div>`;
- return err+kp+card(filt+`<div id="ctab">${cTabla(rows)}</div>`)};
+ const q=Math.max(0,(CUPO.total||0)-(CUPO.usados||0)),act=cActivas();
+ const cup=card(`<b>Cupos de la colonia</b><div class="k" style="margin-top:8px"><div>Cupo total<b>${CUPO.total}</b></div><div>Ocupados<b>${CUPO.usados}</b></div><div>Disponibles<b class="${q?'ok':'bad'}">${q}</b></div><div>Inscripciones activas<b>${act}</b><span class="mu">sin contar canceladas</span></div></div>
+ <div class="mu" style="margin:8px 0">Cuando los ocupados llegan al cupo total, el formulario de la web se cierra solo y aparece el botón “Consultar cupo”. Si cancelás una inscripción, tocá <b>Recalcular</b> para liberar ese lugar.</div>
+ ${puede()?`<div class="r" style="align-items:flex-end"><div><label>Cupo total</label><input id="cpt" type="number" min="0" value="${CUPO.total}" style="width:110px"></div><div><label>Ocupados</label><input id="cpu" type="number" min="0" value="${CUPO.usados}" style="width:110px"></div><button class="p" onclick="cCupoSet($('#cpu').value,$('#cpt').value)">Guardar</button><button onclick="cCupoSet(cActivas(),$('#cpt').value)">↻ Recalcular (${act} activas)</button></div>`:''}`);
+ return err+kp+cup+card(filt+`<div id="ctab">${cTabla(rows)}</div>`)};
 function cTabla(rows){rows=rows||cLista();if(!rows.length)return `<div class="mu" style="padding:8px 0">${L('colonia').length?'No hay inscripciones con este filtro.':'Todavía no llegó ninguna inscripción.'}</div>`;
  return `<div class="w vs"><table class="pt"><tr><th>Fecha</th><th>Niño/a</th><th>Edad</th><th>CUIL</th><th>Teléfonos</th><th>Obra social</th><th>Estado</th><th class="ac">Acciones</th></tr>${rows.map(x=>`<tr${(x.estado||'nueva')=='nueva'?' class="rowed"':''}><td>${fh(x.creado)}</td><td><b class="lk" onclick="cAbrir('${x.id}')">${esc(x.nombre)}</b></td><td>${edad(x.nac)}</td><td>${esc(x.cuil)}</td><td>${esc(cTel(x))}</td><td>${esc(x.os)}</td>
  <td><select onchange="cEstado('${x.id}',this.value)">${CEST.map(([k,l])=>`<option value="${k}" ${(x.estado||'nueva')==k?'selected':''}>${l}</option>`).join('')}</select></td>
@@ -1333,7 +1341,7 @@ function cAbrir(id){const x=C.colonia[id];if(!x)return;cVer=id;
  document.body.style.overflow='hidden'}
 function cCerrar(){const o=$('#colov');if(o)o.remove();cVer=null;document.body.style.overflow=''}
 document.addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#colov'))cCerrar()});
-window.cEstado=cEstado;window.cNota=cNota;window.cDel=cDel;window.cAbrir=cAbrir;window.cCerrar=cCerrar;window.cRef2=cRef2;
+window.cCupoSet=cCupoSet;window.cActivas=cActivas;window.cEstado=cEstado;window.cNota=cNota;window.cDel=cDel;window.cAbrir=cAbrir;window.cCerrar=cCerrar;window.cRef2=cRef2;
 
 window.mes = mes; window.fecha = fecha; window.q = q; window.tab = tab; window.edit = edit; window.rol = rol;
 window.render = render; window.salir = salir; window.login = login; window.setup = setup;
